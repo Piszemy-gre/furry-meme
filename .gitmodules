@@ -1,0 +1,24 @@
+[submodule "libs/glfw/glfw"]
+	path = libs/glfw/glfw
+	url = https://github.com/glfw/glfw
+[submodule "libs/glm/glm"]
+	path = libs/glm/glm
+	url = https://github.com/g-truc/glm
+[submodule "libs/glfwpp/glfwpp"]
+	path = libs/glfwpp/glfwpp
+	url = https://github.com/janekb04/glfwpp
+[submodule "libs/stb/stb"]
+	path = libs/stb/stb
+	url = https://github.com/nothings/stb
+[submodule "libs/glbinding/glbinding"]
+	path = libs/glbinding/glbinding
+	url = https://github.com/cginternals/glbinding
+[submodule "libs/globjects/globjects"]
+	path = libs/globjects/globjects
+	url = https://github.com/cginternals/globjects
+[submodule "libs/imgui/imgui"]
+	path = libs/imgui/imgui
+	url = https://github.com/ocornut/imgui
+[submodule "libs/spdlog/spdlog"]
+	path = libs/spdlog/spdlog
+	url = https://github.com/gabime/spdlog

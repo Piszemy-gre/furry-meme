@@ -1,0 +1,2 @@
+add_library(glfwpp INTERFACE)
+target_include_directories(glfwpp INTERFACE glfwpp/include)
