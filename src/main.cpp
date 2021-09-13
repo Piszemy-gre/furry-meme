@@ -138,6 +138,8 @@ int main()
         textureIdUniform.set(textureId);
 
         window.framebufferSizeEvent.setCallback([&P](glfw::Window &window, int width, int height) {
+            if (width == 0 && height == 0)
+                return;
             gl::glViewport(0, 0, width, height);
             P.set(glm::perspective(glm::radians(45.0f), float(width) / float(height), 0.1f, 100.0f));
         });
@@ -166,8 +168,8 @@ int main()
 
                 constexpr float padding = 10.0f;
                 const ImGuiViewport *viewport = ImGui::GetMainViewport();
-                ImVec2 window_pos(viewport->WorkPos.x + viewport->WorkSize.x - padding, viewport->WorkPos.y + padding);
-                ImVec2 window_pos_pivot(1.0f, 0.0f);
+                const ImVec2 window_pos(viewport->WorkPos.x + viewport->WorkSize.x - padding, viewport->WorkPos.y + padding);
+                const ImVec2 window_pos_pivot(1.0f, 0.0f);
                 ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);
                 ImGui::SetNextWindowBgAlpha(0.35f);
                 if (ImGui::Begin("Fps counter", nullptr, window_flags))
