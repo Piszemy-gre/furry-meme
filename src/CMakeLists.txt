@@ -25,6 +25,11 @@ add_custom_target(copyShaders ALL
     DEPENDS my_open_world
 )
 
+add_custom_target(copyTextures ALL
+    COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/assets/textures" "$<TARGET_FILE_DIR:my_open_world>/textures"
+    DEPENDS my_open_world
+)
+
 add_custom_target(copyFont ALL
     COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/libs/imgui/imgui/misc/fonts/DroidSans.ttf" "$<TARGET_FILE_DIR:my_open_world>/fonts/DroidSans.ttf"
     DEPENDS my_open_world
