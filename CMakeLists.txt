@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 
+# https://stackoverflow.com/a/44023223
+# set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
