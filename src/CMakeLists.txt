@@ -1,9 +1,17 @@
 project(HelloWorld)
 cmake_minimum_required(VERSION 3.0)
 
+file(GLOB my_headers
+     "*.h"
+)
+
+file(GLOB my_sources
+     "*.cpp"
+)
+
 add_executable(my_open_world 
-    main.cpp
-    TextureArray.cpp
+    ${my_headers}
+    ${my_sources}
 )
 
 target_link_libraries(my_open_world
