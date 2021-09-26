@@ -91,6 +91,8 @@ public:
 
     void onFramebufferSizeEvent(int width, int height)
     {
+        if (width == 0 || height == 0)
+            return;
         gl::glViewport(0, 0, width, height);
         P.set(glm::perspective(glm::radians(45.0f), float(width) / float(height), 0.1f, 100.0f));
     }
