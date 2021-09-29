@@ -16,6 +16,8 @@
 #include <glbinding-aux/types_to_string.h>
 
 #define __GL_H__
+#include "Chunk.h"
+
 #include <GLFW/glfw3.h>
 #include <glfwpp/glfwpp.h>
 
@@ -69,6 +71,7 @@ public:
 
         window.keyEvent.setCallback([this](glfw::Window &, glfw::KeyCode keyCode, int scanCode, glfw::KeyState keyState, glfw::ModifierKeyBit modifierKeyBit) {
             renderer.onKeyEvent(keyCode, scanCode, keyState, modifierKeyBit);
+            onKeyEvent(keyCode, scanCode, keyState, modifierKeyBit);
         });
 
         window.cursorPosEvent.setCallback([this](glfw::Window &, double xPos, double yPos) {
@@ -90,86 +93,11 @@ public:
 
     void run()
     {
-
-        std::array positions = {
-            -0.5f, -0.5f, -0.5f,
-            0.5f, -0.5f, -0.5f,
-            0.5f, 0.5f, -0.5f,
-            0.5f, 0.5f, -0.5f,
-            -0.5f, 0.5f, -0.5f,
-            -0.5f, -0.5f, -0.5f,
-            -0.5f, -0.5f, 0.5f,
-            0.5f, -0.5f, 0.5f,
-            0.5f, 0.5f, 0.5f,
-            0.5f, 0.5f, 0.5f,
-            -0.5f, 0.5f, 0.5f,
-            -0.5f, -0.5f, 0.5f,
-            -0.5f, 0.5f, 0.5f,
-            -0.5f, 0.5f, -0.5f,
-            -0.5f, -0.5f, -0.5f,
-            -0.5f, -0.5f, -0.5f,
-            -0.5f, -0.5f, 0.5f,
-            -0.5f, 0.5f, 0.5f,
-            0.5f, 0.5f, 0.5f,
-            0.5f, 0.5f, -0.5f,
-            0.5f, -0.5f, -0.5f,
-            0.5f, -0.5f, -0.5f,
-            0.5f, -0.5f, 0.5f,
-            0.5f, 0.5f, 0.5f,
-            -0.5f, -0.5f, -0.5f,
-            0.5f, -0.5f, -0.5f,
-            0.5f, -0.5f, 0.5f,
-            0.5f, -0.5f, 0.5f,
-            -0.5f, -0.5f, 0.5f,
-            -0.5f, -0.5f, -0.5f,
-            -0.5f, 0.5f, -0.5f,
-            0.5f, 0.5f, -0.5f,
-            0.5f, 0.5f, 0.5f,
-            0.5f, 0.5f, 0.5f,
-            -0.5f, 0.5f, 0.5f,
-            -0.5f, 0.5f, -0.5f};
-        std::array texCoords = {
-            0.0f, 0.0f,
-            1.0f, 0.0f,
-            1.0f, 1.0f,
-            1.0f, 1.0f,
-            0.0f, 1.0f,
-            0.0f, 0.0f,
-            0.0f, 0.0f,
-            1.0f, 0.0f,
-            1.0f, 1.0f,
-            1.0f, 1.0f,
-            0.0f, 1.0f,
-            0.0f, 0.0f,
-            1.0f, 0.0f,
-            1.0f, 1.0f,
-            0.0f, 1.0f,
-            0.0f, 1.0f,
-            0.0f, 0.0f,
-            1.0f, 0.0f,
-            1.0f, 0.0f,
-            1.0f, 1.0f,
-            0.0f, 1.0f,
-            0.0f, 1.0f,
-            0.0f, 0.0f,
-            1.0f, 0.0f,
-            0.0f, 1.0f,
-            1.0f, 1.0f,
-            1.0f, 0.0f,
-            1.0f, 0.0f,
-            0.0f, 0.0f,
-            0.0f, 1.0f,
-            0.0f, 1.0f,
-            1.0f, 1.0f,
-            1.0f, 0.0f,
-            1.0f, 0.0f,
-            0.0f, 0.0f,
-            0.0f, 1.0f};
+        chunk.fillAllButCorner(1);
 
         globjects::VertexArray vao;
-        globjects::Buffer positionsBuffer, texCoordsBuffer;
-        positionsBuffer.setData(positions, gl::GL_STATIC_DRAW);
-        texCoordsBuffer.setData(texCoords, gl::GL_STATIC_DRAW);
+
+        constructChunkVertices();
 
         auto binding0 = vao.binding(0);
         binding0->setAttribute(0);
@@ -212,6 +140,22 @@ public:
     }
 
 private:
+    void constructChunkVertices()
+    {
+        positions = chunk.constructVertices(strategy_);
+        positionsBuffer.setData(positions, gl::GL_STATIC_DRAW);
+        texCoordsBuffer.setData(positions, gl::GL_STATIC_DRAW);
+    }
+
+    void onKeyEvent(glfw::KeyCode keyCode, int scanCode, glfw::KeyState keyState, glfw::ModifierKeyBit modifierKeyBit)
+    {
+        if (keyCode == glfw::KeyCode::K && keyState == glfw::KeyState::Press)
+        {
+            strategy_ = strategy_ == VerticesConstructStrategy::naive ? VerticesConstructStrategy::greedy : VerticesConstructStrategy::naive;
+            constructChunkVertices();
+        }
+    }
+
     void drawFpsWindow() const
     {
         static ImGuiIO &io = ImGui::GetIO();
@@ -249,6 +193,11 @@ private:
     helper glfwMakeContextCurrent, globjectsInit;
     ImguiManager imgui;
     Renderer renderer;
+
+    globjects::Buffer positionsBuffer, texCoordsBuffer;
+    Chunk chunk;
+    std::vector<float> positions;
+    VerticesConstructStrategy strategy_{VerticesConstructStrategy::naive};
 };
 
 #endif /* SRC_APP_H */
