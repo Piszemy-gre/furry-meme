@@ -1,27 +1,30 @@
 #include "Chunk.h"
+#include "World.h"
+#include "voxel_utility.h"
 #include <array>
 #include <format>
 #include <iostream>
 
-#include "voxel_utility.h"
+#include "glm/glm.hpp"
 
-std::vector<float> Chunk::constructVertices(VerticesConstructStrategy strategy) const
+Chunk::Chunk(const ChunkPosition position) : position_(position)
+{}
+
+std::vector<float> Chunk::constructVertices(const World &world, VerticesConstructStrategy strategy) const
 {
     switch (strategy)
     {
     case (VerticesConstructStrategy::naive):
-        return constructVerticesNaive();
+        return constructVerticesNaive(world);
     case VerticesConstructStrategy::greedy:
-        return constructVerticesGreedy();
+        return constructVerticesGreedy(world);
     default:
-        return constructVerticesNaive();
+        return constructVerticesNaive(world);
     }
 }
 
-Chunk::Block Chunk::getBlock(const int x, const int y, const int z) const
+Block Chunk::getBlock(size_t x, size_t y, size_t z) const
 {
-    if (x < 0 || x >= static_cast<int>(chunk_size) || y < 0 || y >= static_cast<int>(chunk_size) || z < 0 || z >= static_cast<int>(chunk_size))
-        return 0;
     return blocks_[getBlockIdx(x, y, z)];
 }
 
@@ -48,7 +51,7 @@ size_t Chunk::getBlockIdx(const size_t x, const size_t y, const size_t z)
     return x + y * (1 << chunk_size_exp) + z * (1 << 2 * chunk_size_exp);
 }
 
-std::vector<float> Chunk::constructVerticesNaive() const
+std::vector<float> Chunk::constructVerticesNaive(const World &world) const
 {
     std::vector<float> vertices;
     auto iter = std::back_inserter(vertices);
@@ -57,10 +60,12 @@ std::vector<float> Chunk::constructVerticesNaive() const
             for (size_t z = 0; z < chunk_size; ++z)
                 if (getBlock(x, y, z) != 0)
                     iter = voxel_utility::insertCube(iter, x, y, z, 1);
+
+    voxel_utility::translateVertices(begin(vertices), end(vertices), position_.x * chunk_size, position_.y * chunk_size, position_.z * chunk_size);
     return vertices;
 }
 
-std::vector<float> Chunk::constructVerticesGreedy() const
+std::vector<float> Chunk::constructVerticesGreedy(const World &world) const
 {
     //https://0fps.net/2012/06/30/meshing-in-a-minecraft-game/
     //https://gist.github.com/Vercidium/a3002bd083cce2bc854c9ff8f0118d33
@@ -77,6 +82,7 @@ std::vector<float> Chunk::constructVerticesGreedy() const
         std::array q{0, 0, 0};
 
         std::vector mask(chunk_size * chunk_size, false);
+        std::vector<std::array<int, 3>> normals(chunk_size * chunk_size, {0, 0, 0});
         q[d] = 1;
 
         for (x[d] = -1; x[d] < static_cast<int>(chunk_size);)
@@ -87,10 +93,29 @@ std::vector<float> Chunk::constructVerticesGreedy() const
             {
                 for (x[u] = 0; x[u] < static_cast<int>(chunk_size); ++x[u])
                 {
+
                     //is block on this position
-                    const auto b1 = x[d] >= 0 ? getBlock(x[0], x[1], x[2]) != 0 : true;
+                    const auto b1 = x[d] >= 0 ? world.isSolidBlockAt(WorldPosition(
+                                                    x[0] + position_.x * chunk_size,
+                                                    x[1] + position_.y * chunk_size,
+                                                    x[2] + position_.z * chunk_size))
+                                              : true;
+
                     //is there a block in the direction we are searching. (assume there are no block outside this chunk)
-                    const auto b2 = x[d] < chunk_size - 1 ? getBlock(x[0] + q[0], x[1] + q[1], x[2] + q[2]) != 0 : false;
+                    const auto b2 = x[d] < chunk_size - 1 ? world.isSolidBlockAt(WorldPosition(
+                                                                x[0] + position_.x * chunk_size + q[0],
+                                                                x[1] + position_.y * chunk_size + q[1],
+                                                                x[2] + position_.z * chunk_size + q[2]))
+                                                          : false;
+
+                    if (b1 && !b2)
+                    {
+                        normals[n] = q;
+                    }
+                    else if (!b1 && b2)
+                    {
+                        normals[n] = {-q[0], -q[1], -q[2]};
+                    }
 
                     mask[n++] = b1 != b2; //is there a face between blocks. There is no face visible if both blocks are air or the two blocks are solid
                 }
@@ -133,6 +158,7 @@ std::vector<float> Chunk::constructVerticesGreedy() const
                                                                   x[0] + du[0], x[1] + du[1], x[2] + du[2],
                                                                   x[0] + du[0] + dv[0], x[1] + du[1] + dv[1], x[2] + du[2] + dv[2],
                                                                   x[0] + dv[0], x[1] + dv[1], x[2] + dv[2]);
+
                         for (int l = 0; l < h; ++l)
                             for (int k = 0; k < w; ++k)
                                 mask[n + k + l * chunk_size] = false;
@@ -148,5 +174,6 @@ std::vector<float> Chunk::constructVerticesGreedy() const
             }
         }
     }
+    voxel_utility::translateVertices(begin(vertices), end(vertices), position_.x * chunk_size, position_.y * chunk_size, position_.z * chunk_size);
     return vertices;
 }
