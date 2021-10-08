@@ -3,9 +3,8 @@
 #include "voxel_utility.h"
 #include <array>
 #include <format>
-#include <iostream>
 
-#include "glm/glm.hpp"
+
 
 Chunk::Chunk(const ChunkPosition position) : position_(position)
 {}
@@ -28,6 +27,11 @@ Block Chunk::getBlock(size_t x, size_t y, size_t z) const
     return blocks_[getBlockIdx(x, y, z)];
 }
 
+Block Chunk::getBlock(glm::vec<3, size_t> position) const
+{
+    return getBlock(position.x, position.y, position.z);
+}
+
 void Chunk::setBlock(const size_t x, const size_t y, const size_t z, const Block b)
 {
     blocks_[getBlockIdx(x, y, z)] = b;
@@ -44,6 +48,14 @@ void Chunk::fillAllButCorner(const Block b)
         for (size_t y = 0; y < chunk_size; y++)
             for (size_t z = 0; z < chunk_size; z++)
                 setBlock(x, y, z, x * 2 < chunk_size || y * 2 < chunk_size || z * 2 < chunk_size ? b : 0);
+}
+
+void Chunk::fillAllButCorners(const Block b)
+{
+    for (size_t x = 0; x < chunk_size; x++)
+        for (size_t y = 0; y < chunk_size; y++)
+            for (size_t z = 0; z < chunk_size; z++)
+                setBlock(x, y, z, (x <= chunk_size / 4 || x >= 3 * chunk_size / 4) && (y <= chunk_size / 4 || y >= 3 * chunk_size / 4) && (z <= chunk_size / 4 || z >= 3 * chunk_size / 4) ? b : 0);
 }
 
 size_t Chunk::getBlockIdx(const size_t x, const size_t y, const size_t z)
@@ -82,42 +94,28 @@ std::vector<float> Chunk::constructVerticesGreedy(const World &world) const
         std::array q{0, 0, 0};
 
         std::vector mask(chunk_size * chunk_size, false);
-        std::vector<std::array<int, 3>> normals(chunk_size * chunk_size, {0, 0, 0});
+        std::vector flag(chunk_size * chunk_size, false);
+
         q[d] = 1;
 
         for (x[d] = -1; x[d] < static_cast<int>(chunk_size);)
         {
             size_t n = 0;
-
             for (x[v] = 0; x[v] < static_cast<int>(chunk_size); ++x[v])
             {
                 for (x[u] = 0; x[u] < static_cast<int>(chunk_size); ++x[u])
                 {
 
+                    auto bp = BlockPosition(x[0], x[1], x[2]);
+                    auto wp = position_ + bp;
                     //is block on this position
-                    const auto b1 = x[d] >= 0 ? world.isSolidBlockAt(WorldPosition(
-                                                    x[0] + position_.x * chunk_size,
-                                                    x[1] + position_.y * chunk_size,
-                                                    x[2] + position_.z * chunk_size))
-                                              : true;
+                    const auto b1 = x[d] >= 0 ? world.isSolidBlockAt(wp) : false;
 
-                    //is there a block in the direction we are searching. (assume there are no block outside this chunk)
-                    const auto b2 = x[d] < chunk_size - 1 ? world.isSolidBlockAt(WorldPosition(
-                                                                x[0] + position_.x * chunk_size + q[0],
-                                                                x[1] + position_.y * chunk_size + q[1],
-                                                                x[2] + position_.z * chunk_size + q[2]))
-                                                          : false;
-
-                    if (b1 && !b2)
-                    {
-                        normals[n] = q;
-                    }
-                    else if (!b1 && b2)
-                    {
-                        normals[n] = {-q[0], -q[1], -q[2]};
-                    }
-
-                    mask[n++] = b1 != b2; //is there a face between blocks. There is no face visible if both blocks are air or the two blocks are solid
+                    //is there a block in the direction we are searching.
+                    wp.addBlockPosition({q[0], q[1], q[2]});
+                    const auto b2 = x[d] < static_cast<int>(chunk_size) - 1 ? world.isSolidBlockAt(wp) : false;
+                    flag[n] = b1 && !b2;
+                    mask[n++] = b1 != b2; //is there's a face between blocks. There is no face visible if both blocks are air or the two blocks are solid
                 }
             }
 
@@ -153,12 +151,18 @@ std::vector<float> Chunk::constructVerticesGreedy(const World &world) const
                         du[u] = w;
                         dv[v] = h;
 
-                        vertices_iter = voxel_utility::insertQuad(vertices_iter,
+                        if (flag[n])
+                            vertices_iter = voxel_utility::insertQuad(vertices_iter,
                                                                   x[0], x[1], x[2],
                                                                   x[0] + du[0], x[1] + du[1], x[2] + du[2],
                                                                   x[0] + du[0] + dv[0], x[1] + du[1] + dv[1], x[2] + du[2] + dv[2],
                                                                   x[0] + dv[0], x[1] + dv[1], x[2] + dv[2]);
-
+                        else
+                            vertices_iter = voxel_utility::insertQuad(vertices_iter,
+                                                                      x[0], x[1], x[2],
+                                                                      x[0] + dv[0], x[1] + dv[1], x[2] + dv[2],
+                                                                      x[0] + du[0] + dv[0], x[1] + du[1] + dv[1], x[2] + du[2] + dv[2],
+                                                                      x[0] + du[0], x[1] + du[1], x[2] + du[2]);
                         for (int l = 0; l < h; ++l)
                             for (int k = 0; k < w; ++k)
                                 mask[n + k + l * chunk_size] = false;

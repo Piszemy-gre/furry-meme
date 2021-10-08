@@ -101,11 +101,11 @@ public:
 
     void buildWorld()
     {
-        for (int x = 0; x <= 1; x++)
+        for (int x = 0; x <= 0; x++)
             for (int y = 0; y <= 0; y++)
-                for (int z = 0; z <= 0; z++)
+                for (int z = 0; z <= 1; z++)
                     world.getChunk(ChunkPosition(x, y, z)).fillAllButCorner(1);
-        //world.getChunk(ChunkPosition(1, 2, 1)).fillAllButCorner(1);
+        world.getChunk(ChunkPosition(1, 2, 1)).fillAllButCorner(1);
     }
 
     void run()
