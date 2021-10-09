@@ -27,13 +27,6 @@
 #include "Renderer.h"
 #include "World.h"
 
-struct BuffersAggregator
-{
-    globjects::VertexArray vao;
-    globjects::Buffer positionsBuffer, texCoordsBuffer;
-    size_t verticesCount{0};
-};
-
 class App
 {
 public:
@@ -120,24 +113,6 @@ public:
 
         constructChunksVertices();
 
-        for (auto &[_, b] : buffers)
-        {
-            auto &[vao, positionsBuffer, texCoordsBuffer, verticesCount] = b;
-            vao.bind();
-
-            auto binding0 = vao.binding(0);
-            binding0->setAttribute(0);
-            binding0->setBuffer(&positionsBuffer, 0, sizeof(glm::vec3));
-            binding0->setFormat(3, gl::GL_FLOAT, gl::GL_FALSE, 0);
-            vao.enable(0);
-
-            auto binding1 = vao.binding(1);
-            binding1->setAttribute(1);
-            binding1->setBuffer(&texCoordsBuffer, 0, sizeof(glm::vec2));
-            binding1->setFormat(2, gl::GL_FLOAT, gl::GL_FALSE, 0);
-            vao.enable(1);
-        }
-
         double lastTime = glfw::getTime();
         double time = lastTime;
         double delta;
@@ -154,11 +129,13 @@ public:
 
             renderer.update(delta);
 
-            //for (auto &[_, b] : buffers)
-            //    b.vao.drawArrays(gl::GL_TRIANGLES, 0, b.verticesCount);
+           
 
             renderer.beginDraw();
-            renderer.draw(dummyBlocks);
+            //renderer.draw(dummyBlocks);
+            for (const auto &[_, drawable] : drawables)
+                renderer.draw(drawable);
+
             renderer.endDraw();
 
             imgui.render([this]() {
@@ -181,11 +158,9 @@ private:
     }
     void constructChunkVertices(ChunkPosition position, const Chunk &chunk)
     {
-        positions = chunk.constructVertices(world, strategy_);
-        auto &buffer = buffers[position];
-        buffer.positionsBuffer.setData(positions, gl::GL_STATIC_DRAW);
-        buffer.texCoordsBuffer.setData(positions, gl::GL_STATIC_DRAW);
-        buffer.verticesCount = positions.size() / 3;
+        //positions = chunk.constructVertices(world, strategy_);
+        auto &drawable = drawables[position];
+        drawable.update(chunk.createMesh(world, strategy_));
     }
 
     void onKeyEvent(glfw::KeyCode keyCode, int scanCode, glfw::KeyState keyState, glfw::ModifierKeyBit modifierKeyBit)
@@ -225,10 +200,11 @@ private:
         ImGui::Text("FPS: %.1f", io.Framerate);
 
         fpsHistory[fpsHistoryOffset] = io.Framerate;
+        fpsHistoryMax = std::max(fpsHistory[fpsHistoryOffset], fpsHistoryMax);
         fpsHistoryOffset = (fpsHistoryOffset + 1) % fpsHistory.size();
 
         auto text = std::format("FPS: {:.1f}", io.Framerate);
-        ImGui::PlotLines("", &fpsHistory[0], fpsHistory.size(), fpsHistoryOffset, nullptr, 0.f, 300.0f, ImVec2(0, 80.0f));
+        ImGui::PlotLines("", &fpsHistory[0], fpsHistory.size(), fpsHistoryOffset, nullptr, 0.f, fpsHistoryMax, ImVec2(0, 80.0f));
         ImGui::End();
         ImGui::PopStyleColor(1);
     }
@@ -256,14 +232,14 @@ private:
 
     globjects::Buffer positionsBuffer, texCoordsBuffer;
 
-    std::unordered_map<ChunkPosition, BuffersAggregator> buffers;
+    std::unordered_map<ChunkPosition, BasicDrawable> drawables;
     World world;
-    std::vector<float> positions;
     VerticesConstructStrategy strategy_{VerticesConstructStrategy::naive};
 
     bool cursorVisible = false;
 
     std::array<float, 1000> fpsHistory = {0};
+    float fpsHistoryMax = 0;
     size_t fpsHistoryOffset = 0;
 
 };

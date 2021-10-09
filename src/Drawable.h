@@ -5,6 +5,8 @@ class Renderer;
 
 class Drawable
 {
+protected:
+    ~Drawable() = default;
 public:
     virtual void draw(const Renderer &window) const = 0;
 };

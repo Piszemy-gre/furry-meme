@@ -1,5 +1,11 @@
 #pragma once
+
+#include "BasicDrawable.h"
+#include "Mesh.h"
+
+#include <memory>
 #include <vector>
+#include <glm/vec3.hpp>
 #include <glm/detail/type_vec3.hpp>
 
 enum class VerticesConstructStrategy
@@ -12,26 +18,7 @@ using Block = size_t;
 
 class World;
 using BlockPosition = glm::vec<3, size_t>;
-
-struct ChunkPosition
-{
-    long long x, y, z;
-
-    friend bool operator==(const ChunkPosition &lhs, const ChunkPosition &rhs)
-    {
-        return lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z;
-    }
-
-    friend bool operator!=(const ChunkPosition &lhs, const ChunkPosition &rhs)
-    {
-        return !(lhs == rhs);
-    }
-
-    friend ChunkPosition operator+(const ChunkPosition& lhs, const ChunkPosition& rhs)
-    {
-        return {.x = lhs.x + rhs.x, .y = lhs.y + rhs.y, .z = lhs.z + rhs.z};
-    }
-};
+using ChunkPosition = glm::vec<3, long long>;
 
 
 struct WorldPosition
@@ -64,14 +51,18 @@ namespace std
 class Chunk
 {
 public:
-    constexpr inline static size_t chunk_size_exp = 4;
+    constexpr inline static size_t chunk_size_exp = 5;
     constexpr inline static size_t chunk_size = 1 << chunk_size_exp;
 
     explicit Chunk(ChunkPosition position);
 
-    [[nodiscard]] std::vector<float> constructVertices(const World &, VerticesConstructStrategy = VerticesConstructStrategy::greedy) const;
-    [[nodiscard]] std::vector<float> constructVerticesNaive(const World &) const;
-    [[nodiscard]] std::vector<float> constructVerticesGreedy(const World &) const;
+    [[nodiscard]] BasicDrawable createDrawable(const World &, VerticesConstructStrategy = VerticesConstructStrategy::greedy) const;
+    [[nodiscard]] BasicDrawable createDrawableNaive(const World &) const;
+    [[nodiscard]] BasicDrawable createDrawableGreedy(const World &) const;
+
+    [[nodiscard]] Mesh createMesh(const World &, VerticesConstructStrategy) const;
+    [[nodiscard]] Mesh createMeshNaive(const World &) const;
+    [[nodiscard]] Mesh createMeshGreedy(const World &) const;
 
     [[nodiscard]] Block getBlock(size_t x, size_t y, size_t z) const;
     [[nodiscard]] Block getBlock(glm::vec<3, size_t> position) const;
@@ -83,6 +74,9 @@ public:
     void fillAllButCorners(Block);
 
 private:
+
+
+
     static size_t getBlockIdx(size_t x, size_t y, size_t z);
     std::vector<Block> blocks_{std::vector<Block>(1 << 3 * chunk_size_exp)};
     const ChunkPosition position_;

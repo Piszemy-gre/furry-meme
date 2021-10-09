@@ -70,48 +70,48 @@ public:
             glm::vec3(0.5f, 0.5f, 0.5),
             glm::vec3(-0.5f, 0.5f, -0.5f)};
 
-        std::vector blockTexCoords = {
-            glm::vec2(1.0f, 0.0f),
-            glm::vec2(0.0f, 0.0f),
-            glm::vec2(1.0f, 1.0f),
-            glm::vec2(0.0f, 1.0f),
-            glm::vec2(1.0f, 1.0f),
-            glm::vec2(0.0f, 0.0f),
+        std::vector<glm::vec2> blockTexCoords = {
+            {1.0f, 0.0f},
+            {0.0f, 0.0f},
+            {1.0f, 1.0f},
+            {0.0f, 1.0f},
+            {1.0f, 1.0f},
+            {0.0f, 0.0f},
 
-            glm::vec2(0.0f, 0.0f),
-            glm::vec2(1.0f, 0.0f),
-            glm::vec2(1.0f, 1.0f),
-            glm::vec2(1.0f, 1.0f),
-            glm::vec2(0.0f, 1.0f),
-            glm::vec2(0.0f, 0.0f),
+            {0.0f, 0.0f},
+            {1.0f, 0.0f},
+            {1.0f, 1.0f},
+            {1.0f, 1.0f},
+            {0.0f, 1.0f},
+            {0.0f, 0.0f},
 
-            glm::vec2(0.0f, 1.0f),
-            glm::vec2(1.0f, 1.0f),
-            glm::vec2(1.0f, 0.0f),
-            glm::vec2(1.0f, 0.0f),            
-            glm::vec2(0.0f, 0.0f),            
-            glm::vec2(0.0f, 1.0f),
+            {0.0f, 1.0f},
+            {1.0f, 1.0f},
+            {1.0f, 0.0f},
+            {1.0f, 0.0f},
+            {0.0f, 0.0f},
+            {0.0f, 1.0f},
 
-            glm::vec2(1.0f, 1.0f),
-            glm::vec2(0.0f, 1.0f),
-            glm::vec2(1.0f, 0.0f),
-            glm::vec2(0.0f, 0.0f),
-            glm::vec2(1.0f, 0.0f),
-            glm::vec2(0.0f, 1.0f),
+            {1.0f, 1.0f},
+            {0.0f, 1.0f},
+            {1.0f, 0.0f},
+            {0.0f, 0.0f},
+            {1.0f, 0.0f},
+            {0.0f, 1.0f},
 
-            glm::vec2(0.0f, 1.0f),
-            glm::vec2(1.0f, 1.0f),
-            glm::vec2(1.0f, 0.0f),
-            glm::vec2(1.0f, 0.0f),
-            glm::vec2(0.0f, 0.0f),
-            glm::vec2(0.0f, 1.0f),
+            {0.0f, 1.0f},
+            {1.0f, 1.0f},
+            {1.0f, 0.0f},
+            {1.0f, 0.0f},
+            {0.0f, 0.0f},
+            {0.0f, 1.0f},
 
-            glm::vec2(1.0f, 1.0f),
-            glm::vec2(0.0f, 1.0f),
-            glm::vec2(1.0f, 0.0f),
-            glm::vec2(0.0f, 0.0f),
-            glm::vec2(1.0f, 0.0f),
-            glm::vec2(0.0f, 1.0f)};
+            {1.0f, 1.0f},
+            {0.0f, 1.0f},
+            {1.0f, 0.0f},
+            {0.0f, 0.0f},
+            {1.0f, 0.0f},
+            {0.0f, 1.0f}};
 
         std::vector blockTexIds = {
             1, 1, 1, 1, 1, 1,
@@ -120,7 +120,7 @@ public:
             1, 1, 1, 1, 1, 1,
             2, 2, 2, 2, 2, 2, // bottom
             0, 0, 0, 0, 0, 0, // top
-            };
+        };
 
         std::vector<glm::vec3> chunkVert;
         std::vector<glm::vec2> chunkTexCoords;

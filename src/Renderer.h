@@ -65,7 +65,7 @@ public:
 
         globjects::Framebuffer::defaultFBO()->bind();
 
-        std::array quadBufferData = {
+        constexpr std::array quadBufferData = {
             -1.0f, 1.0f, 0.0f, 0.0f, 1.0f,
             -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
             1.0f, 1.0f, 0.0f, 1.0f, 1.0f,
@@ -129,6 +129,7 @@ public:
         V.set(camera.getV());
     }
 
+
     void onFramebufferSizeEvent(int width, int height)
     {
         if (width == 0 || height == 0)
@@ -139,7 +140,7 @@ public:
         glm::ivec2 windowSize = {windowWidth, windowHeight};
 
         gl::glViewport(0, 0, windowWidth, windowHeight);
-        P.set(glm::perspective(glm::radians(45.0f), float(windowWidth) / float(windowHeight), 0.1f, 100.0f));
+        P.set(glm::perspective(fovy, float(windowWidth) / float(windowHeight), zNear, zFar));
         screenSize.set(windowSize);
 
         gPosition.image2D(0, gl::GL_RGB16F, windowSize, 0, gl::GL_RGB, gl::GL_FLOAT, nullptr);
@@ -264,5 +265,8 @@ private:
     float debugTextureScale = 1.f;
     bool debugTextureFullscreen = false;
     bool drawWireframe = false;
+    constexpr static float zNear = 0.1f;
+    constexpr static float zFar = 1000.f;
+    constexpr static float fovy = glm::radians(45.0f);
 };
 #endif /* SRC_GRAPHICS_RENDERER_H */
