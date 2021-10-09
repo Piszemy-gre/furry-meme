@@ -1,6 +1,8 @@
 {
     "C_Cpp.default.cppStandard": "c++20",
     "cSpell.words": [
+        "blit",
+        "fxaa",
         "glbinding",
         "glew",
         "glfw",
@@ -92,7 +94,8 @@
         "regex": "cpp",
         "stack": "cpp",
         "variant": "cpp",
-        "format": "cpp"
+        "format": "cpp",
+        "charconv": "cpp"
     },
     "editor.formatOnSave": true
 }

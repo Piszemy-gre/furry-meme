@@ -1,11 +1,20 @@
 #version 440 core
+#define UINT16_MAX 65535
 
 uniform sampler2DArray tex;
-uniform int textureId;
 
+in vec3 fragWorldPosition;
 in vec2 fragTexCoord;
-out vec4 color;
+flat in uint fragTexId;
+
+layout (location = 0) out vec3 gPosition;
+layout (location = 1) out vec3 gNormal;
+layout (location = 2) out vec2 gTexCord;
+layout (location = 3) out uint  gTexId;
 
 void main() {
-    color = vec4(texture(tex, vec3(fragTexCoord, textureId)).rgb, 1);
+    gPosition = fragWorldPosition;
+    //gNormal = texture(tex, vec3(fragTexCoord, fragTexId)).rgb;
+    gTexCord = fragTexCoord;
+    gTexId = fragTexId + 1;
 }

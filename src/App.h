@@ -1,11 +1,10 @@
 #ifndef SRC_APP_H
 #define SRC_APP_H
 
-#include <array>
+#include <format>
 #include <iostream>
 #include <sstream>
 #include <tuple>
-
 
 #include <glbinding/gl/gl.h>
 #include <glbinding/glbinding.h>
@@ -23,6 +22,7 @@
 
 #include <spdlog/spdlog.h>
 
+#include "DummyBlocks.h"
 #include "ImguiManager.h"
 #include "Renderer.h"
 #include "World.h"
@@ -43,41 +43,47 @@ public:
               .clientApi = glfw::ClientApi::OpenGl,
               .contextVersionMajor = 1,
               .contextVersionMinor = 0},
-          applyWindowHints((windowHints.apply(), 0)),
+          applyWindowHints([this]() { windowHints.apply(); }),
           window(defaultWidth, defaultHeight, "My open world"),
-          glfwMakeContextCurrent((glfw::makeContextCurrent(window), 0)),
-          globjectsInit((globjects::init(glfw::getProcAddress), 0)),
+          glfwMakeContextCurrent([this]() { glfw::makeContextCurrent(window); }),
+          globjectsInit([]() { globjects::init(glfw::getProcAddress); }),
+          glbindingSetDebugCallback([]() {
+              glbinding::setCallbackMaskExcept(glbinding::CallbackMask::After | glbinding::CallbackMask::ParametersAndReturnValue, {"glGetError"});
+              glbinding::setAfterCallback([](const glbinding::FunctionCall &functionCall) {
+                  const auto error = gl::glGetError();
+                  if (error != gl::GL_NO_ERROR)
+                  {
+                      std::stringstream str;
+                      str << functionCall.function->name() << "(";
+                      for (size_t i = 0; i < functionCall.parameters.size(); i++)
+                      {
+                          str << functionCall.parameters[i].get();
+                          if (i + 1 < functionCall.parameters.size())
+                              str << ", ";
+                      }
+                      str << ")";
+                      if (functionCall.returnValue)
+                          str << " -> " << functionCall.returnValue.get();
+                      str << " error code: " << error;
+                      spdlog::error(str.str());
+                  }
+              });
+          }),
           imgui(window),
           renderer(defaultWidth, defaultHeight)
     {
         window.setInputModeCursor(glfw::CursorMode::Disabled);
         glfw::swapInterval(0);
-        glbinding::setCallbackMaskExcept(glbinding::CallbackMask::After | glbinding::CallbackMask::ParametersAndReturnValue, {"glGetError"});
-        glbinding::setAfterCallback([](const glbinding::FunctionCall &functionCall) {
-            const auto error = gl::glGetError();
-            if (error != gl::GL_NO_ERROR)
-            {
-                std::stringstream str;
-                str << functionCall.function->name() << "(";
-                for (size_t i = 0; i < functionCall.parameters.size(); i++)
-                {
-                    str << functionCall.parameters[i].get();
-                    if (i + 1 < functionCall.parameters.size())
-                        str << ", ";
-                }
-                str << ")";
-                if (functionCall.returnValue)
-                    str << " -> " << functionCall.returnValue.get();
-                str << " error code: " << error;
-                spdlog::error(str.str());
-            }
-        });
 
         spdlog::info("OpenGL Version:  {}", glbinding::aux::ContextInfo::version().toString());
         spdlog::info("OpenGL Vendor:   {}", glbinding::aux::ContextInfo::vendor());
         spdlog::info("OpenGL Renderer: {}", glbinding::aux::ContextInfo::renderer());
 
         window.keyEvent.setCallback([this](glfw::Window &, glfw::KeyCode keyCode, int scanCode, glfw::KeyState keyState, glfw::ModifierKeyBit modifierKeyBit) {
+            if (keyCode == glfw::KeyCode::LeftControl && keyState == glfw::KeyState::Press)
+                window.setInputModeCursor((cursorVisible = !cursorVisible) ? glfw::CursorMode::Normal : glfw::CursorMode::Disabled);
+            else if (keyCode == glfw::KeyCode::Escape)
+                window.setShouldClose(true);
             renderer.onKeyEvent(keyCode, scanCode, keyState, modifierKeyBit);
             onKeyEvent(keyCode, scanCode, keyState, modifierKeyBit);
         });
@@ -95,7 +101,7 @@ public:
         });
 
         gl::glEnable(gl::GL_DEPTH_TEST);
-        //gl::glEnable(gl::GL_CULL_FACE); vertices need to be sorted clockwise or counter-clockwise
+        gl::glEnable(gl::GL_CULL_FACE); // vertices need to be sorted clockwise or counter-clockwise
         gl::glLineWidth(2.f); // make wireframes easier to see
     }
 
@@ -136,21 +142,27 @@ public:
         double time = lastTime;
         double delta;
 
+        DummyBlocks dummyBlocks;
+
         while (!window.shouldClose())
         {
             lastTime = time;
             time = glfw::getTime();
             delta = time - lastTime;
 
-            gl::glClearColor((std::sin(time) + 1.0) / 2.0, (std::cos(time) + 1.0) / 2.0, (-std::sin(time) + 1.0) / 2.0, 0.0);
-            gl::glClear(gl::ClearBufferMask::GL_COLOR_BUFFER_BIT | gl::ClearBufferMask::GL_DEPTH_BUFFER_BIT);
+            //gl::glClearColor((std::sin(time) + 1.0) / 2.0, (std::cos(time) + 1.0) / 2.0, (-std::sin(time) + 1.0) / 2.0, 0.0);
 
             renderer.update(delta);
 
-            for (auto &[_, b] : buffers)
-                b.vao.drawArrays(gl::GL_TRIANGLES, 0, b.verticesCount);
+            //for (auto &[_, b] : buffers)
+            //    b.vao.drawArrays(gl::GL_TRIANGLES, 0, b.verticesCount);
+
+            renderer.beginDraw();
+            renderer.draw(dummyBlocks);
+            renderer.endDraw();
 
             imgui.render([this]() {
+                renderer.onGui();
                 ImGui::ShowDemoWindow();
 
                 drawFpsWindow();
@@ -190,7 +202,7 @@ private:
         }
     }
 
-    void drawFpsWindow() const
+    void drawFpsWindow()
     {
         static ImGuiIO &io = ImGui::GetIO();
         constexpr ImGuiWindowFlags window_flags =
@@ -206,10 +218,19 @@ private:
         const ImVec2 window_pos(viewport->WorkPos.x + viewport->WorkSize.x - padding, viewport->WorkPos.y + padding);
         const ImVec2 window_pos_pivot(1.0f, 0.0f);
         ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);
-        ImGui::SetNextWindowBgAlpha(0.35f);
-        if (ImGui::Begin("Fps counter", nullptr, window_flags))
-            ImGui::Text("FPS: %.1f", io.Framerate);
+        ImGui::SetNextWindowBgAlpha(0.7f);
+        ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0, 0, 0, 0));
+
+        ImGui::Begin("Fps counter", nullptr, window_flags);
+        ImGui::Text("FPS: %.1f", io.Framerate);
+
+        fpsHistory[fpsHistoryOffset] = io.Framerate;
+        fpsHistoryOffset = (fpsHistoryOffset + 1) % fpsHistory.size();
+
+        auto text = std::format("FPS: {:.1f}", io.Framerate);
+        ImGui::PlotLines("", &fpsHistory[0], fpsHistory.size(), fpsHistoryOffset, nullptr, 0.f, 300.0f, ImVec2(0, 80.0f));
         ImGui::End();
+        ImGui::PopStyleColor(1);
     }
 
     static constexpr int defaultWidth = 800;
@@ -217,16 +238,21 @@ private:
 
     struct helper
     {
-        helper(int) {}
+        template <class F>
+        helper(F &&f)
+        {
+            f();
+        }
     };
 
     glfw::GlfwLibrary library;
     glfw::WindowHints windowHints;
     helper applyWindowHints;
     glfw::Window window;
-    helper glfwMakeContextCurrent, globjectsInit;
+    helper glfwMakeContextCurrent, globjectsInit, glbindingSetDebugCallback;
     ImguiManager imgui;
     Renderer renderer;
+
 
     globjects::Buffer positionsBuffer, texCoordsBuffer;
 
@@ -234,6 +260,12 @@ private:
     World world;
     std::vector<float> positions;
     VerticesConstructStrategy strategy_{VerticesConstructStrategy::naive};
+
+    bool cursorVisible = false;
+
+    std::array<float, 1000> fpsHistory = {0};
+    size_t fpsHistoryOffset = 0;
+
 };
 
 #endif /* SRC_APP_H */

@@ -5,12 +5,19 @@ cmake_minimum_required(VERSION 3.10)
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
+project(my-open-world)
+
+if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    # Since MSVC 19.29.30129 there is -std:c++20 and cmake uses it
+    # However using this flag does not provide std::format implementation
+    set(CMAKE_CXX20_STANDARD_COMPILE_OPTION "/std:c++latest")
+    set(CMAKE_CXX20_EXTENSION_COMPILE_OPTION "/std:c++latest")
+endif()
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-project(my-open-world)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${PROJECT_SOURCE_DIR}/bin)
