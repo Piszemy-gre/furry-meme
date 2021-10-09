@@ -133,7 +133,7 @@ public:
         }
 
         double lastTime = glfw::getTime();
-        double time;
+        double time = lastTime;
         double delta;
 
         while (!window.shouldClose())
