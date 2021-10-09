@@ -17,7 +17,6 @@ int main()
         textureArray.add("textures/bottom.jpg");
         textureArray.load();
         textureArray.bind(gl::GL_TEXTURE0);
-        int textureId = 0;
 
         app.run();
     }
