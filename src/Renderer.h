@@ -21,7 +21,7 @@ public:
     Renderer(float width, float height)
         : windowWidth(width),
           windowHeight(height),
-          deferredShader("shaders/vert.glsl", "shaders/frag.glsl"),
+          deferredShader("shaders/deferredVert.glsl", "shaders/deferredFrag.glsl"),
           mainShader("shaders/mainVert.glsl", "shaders/mainFrag.glsl"),
           aaShader("shaders/fxaaVert.glsl", "shaders/fxaaFrag.glsl"),
           P(&deferredShader.getProgram(), "P"),

@@ -2079,4 +2079,5 @@ void main() {
         vec4(0, 0, 0, 0)
     );
     fragColor = color;
+    //fragColor = texture(aaColor, fragTexCoord);
 }

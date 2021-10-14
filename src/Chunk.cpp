@@ -36,14 +36,14 @@ BasicDrawable Chunk::createDrawable(const World &world, VerticesConstructStrateg
 
 BasicDrawable Chunk::createDrawableNaive(const World &world) const
 {
-    const auto da = createMeshNaive(world);
-    return BasicDrawable{da.vertices, da.textures, da.texture_indexes};
+    const auto mesh = createMeshNaive(world);
+    return BasicDrawable(mesh);
 }
 
 BasicDrawable Chunk::createDrawableGreedy(const World &world) const
 {
-    const auto da = createMeshGreedy(world);
-    return BasicDrawable{da.vertices, da.textures, da.texture_indexes};
+    const auto mesh = createMeshGreedy(world);
+    return BasicDrawable(mesh);
 }
 
 
@@ -135,6 +135,52 @@ constexpr std::array faces =
         }
     };
 
+    constexpr std::array faces_normals =
+    {
+    //bottom
+        std::array{
+            glm::vec3{0, -1, 0},
+            glm::vec3{0, -1, 0},
+            glm::vec3{0, -1, 0},
+            glm::vec3{0, -1, 0},
+        },
+    //top
+        std::array{
+            glm::vec3{0, 1, 0},
+            glm::vec3{0, 1, 0},
+            glm::vec3{0, 1, 0},
+            glm::vec3{0, 1, 0},
+        },
+    //front
+        std::array{
+            glm::vec3{0, 0, 1},
+            glm::vec3{0, 0, 1},
+            glm::vec3{0, 0, 1},
+            glm::vec3{0, 0, 1},
+        },
+    //back
+        std::array{
+            glm::vec3{0, 0, -1},
+            glm::vec3{0, 0, -1},
+            glm::vec3{0, 0, -1},
+            glm::vec3{0, 0, -1},
+        },
+    //left
+        std::array{
+            glm::vec3{-1, 0, 0},
+            glm::vec3{-1, 0, 0},
+            glm::vec3{-1, 0, 0},
+            glm::vec3{-1, 0, 0},
+        },
+    //right
+        std::array{
+            glm::vec3{1, 0, 0},
+            glm::vec3{1, 0, 0},
+            glm::vec3{1, 0, 0},
+            glm::vec3{1, 0, 0},
+        }
+    };
+
 constexpr auto &bottom_face = faces[0];
 constexpr auto &top_face = faces[1];
 constexpr auto &side_face = faces[2];
@@ -156,10 +202,11 @@ constexpr auto &side_faces_texture_idx = faces_texture_idx[2];
 Mesh Chunk::createMeshNaive(const World &world) const
 {
     Mesh aggregator;
-    auto &[vertices, textures, texture_indices] = aggregator;
+    auto &[vertices, textures, texture_indices, normals] = aggregator;
     auto vertices_iter = std::back_inserter(vertices);
     auto textures_iter = std::back_inserter(textures);
     auto texture_indices_iter = std::back_inserter(texture_indices);
+    auto normals_iter = std::back_inserter(normals);
 
     for (size_t x = 0; x < chunk_size; ++x)
         for (size_t y = 0; y < chunk_size; ++y)
@@ -169,6 +216,7 @@ Mesh Chunk::createMeshNaive(const World &world) const
                     vertices_iter = voxel_utility::insertCube(vertices_iter, glm::vec3{x, y, z}, 1);
                     textures_iter = voxel_utility::insertCubeTextures(textures_iter, faces);
                     texture_indices_iter = voxel_utility::insertCubeTextures(texture_indices_iter, faces_texture_idx);
+                    normals_iter = voxel_utility::insertCubeTextures(normals_iter, faces_normals);
                 }
 
     voxel_utility::translateVertices(begin(vertices), end(vertices), position_ * static_cast<long long>(chunk_size));
@@ -181,10 +229,11 @@ Mesh Chunk::createMeshGreedy(const World &world) const
     //https://gist.github.com/Vercidium/a3002bd083cce2bc854c9ff8f0118d33
 
     Mesh aggregator;
-    auto &[vertices, textures, texture_indices] = aggregator;
+    auto &[vertices, textures, texture_indices, normals] = aggregator;
     auto vertices_iter = std::back_inserter(vertices);
     auto textures_iter = std::back_inserter(textures);
     auto texture_indices_iter = std::back_inserter(texture_indices);
+    auto normals_iter = std::back_inserter(normals);
 
     constexpr int ichunk_size = static_cast<int>(chunk_size);
 
@@ -198,7 +247,7 @@ Mesh Chunk::createMeshGreedy(const World &world) const
 
         std::vector mask(chunk_size * chunk_size, false);
         std::vector flag(chunk_size * chunk_size, false);
-        std::vector<glm::ivec3> normals(chunk_size * chunk_size);
+        std::vector<glm::ivec3> normals_temp(chunk_size * chunk_size);
 
         q[d] = 1;
 
@@ -219,7 +268,7 @@ Mesh Chunk::createMeshGreedy(const World &world) const
                     wp.addBlockPosition({q[0], q[1], q[2]});
                     const auto b2 = x[d] < ichunk_size - 1 ? world.isSolidBlockAt(wp) : false;
                     flag[n] = b1 && !b2;
-                    normals[n] = flag[n] ? q : -q;
+                    normals_temp[n] = flag[n] ? q : -q;
                     mask[n++] = b1 != b2; //is there's a face between blocks. There is no face visible if both blocks are air or the two blocks are solid
                 }
             }
@@ -275,8 +324,8 @@ Mesh Chunk::createMeshGreedy(const World &world) const
                                                                     v2);
                         }
                             
-                        const int faces_idx = normals[n].y == 1 ? 1 : normals[n].y == -1 ? 0 : 2;
-                        if (normals[n].x == 1 || normals[n].z == -1)
+                        const int faces_idx = normals_temp[n].y == 1 ? 1 : normals_temp[n].y == -1 ? 0 : 2;
+                        if (normals_temp[n].x == 1 || normals_temp[n].z == -1)
                             textures_iter = voxel_utility::insertQuad(textures_iter,
                                                                       faces[faces_idx][1],
                                                                       faces[faces_idx][2],
@@ -293,6 +342,12 @@ Mesh Chunk::createMeshGreedy(const World &world) const
                                                                  faces_texture_idx[faces_idx][1],
                                                                  faces_texture_idx[faces_idx][2],
                                                                  faces_texture_idx[faces_idx][3]);
+                                                                 
+                        normals_iter = voxel_utility::insertQuad(normals_iter,
+                                                                 normals_temp[n],
+                                                                 normals_temp[n],
+                                                                 normals_temp[n],
+                                                                 normals_temp[n]);
                         
                         for (int l = 0; l < h; ++l)
                             for (int k = 0; k < w; ++k)

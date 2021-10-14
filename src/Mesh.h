@@ -8,4 +8,5 @@ struct Mesh
     std::vector<glm::vec3> vertices;
     std::vector<glm::vec2> textures;
     std::vector<int> texture_indexes;
+    std::vector<glm::vec3> normals;
 };
